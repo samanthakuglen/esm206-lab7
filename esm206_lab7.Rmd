@@ -1,0 +1,19 @@
+---
+title: "Lab 7 - Multiple Linear Regression"
+author: "Samantha Kuglen"
+date: "11/8/2021"
+output: html_document
+---
+
+## Setup 
+```{r setup, include=TRUE, warning = FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+# Attach packages
+library(tidyverse)
+library(palmerpenguins)
+library(GGally)
+library(broom)
+library(kableExtra)
+library(modelsummary)
+```
