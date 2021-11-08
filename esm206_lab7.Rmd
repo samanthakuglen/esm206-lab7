@@ -16,4 +16,132 @@ library(GGally)
 library(broom)
 library(kableExtra)
 library(modelsummary)
+library(stargazer)
 ```
+
+## Intro the ggpairs
+
+Use GGgally::ggpairs() function to create a pairs plot
+```{r}
+ggpairs(penguins)
+```
+
+```{r}
+# linear relationship appears to exist between body mass and other continuous variables
+penguins %>% 
+  select(species, bill_length_mm:body_mass_g) %>%  # use : to select across multiple columns
+  ggpairs(aes(color = species))
+
+```
+
+## Omitted Variable Bias 
+Important to look at data to know what data needs to be included. Include group as a variable to have correct models. 
+```{r}
+ggplot(data = penguins, aes(x = bill_depth_mm, y = body_mass_g, group = species)) +
+  geom_point(aes(color = species)) +
+  geom_smooth(method = "lm")
+```
+
+## Multiple linear regression - penguins
+
+Use multiple linear regression to try to understand the relationship between multiple predictor variables and a single continuous outcome variable (body mass).
+
+```{r}
+# Notation similar to simple linear regression
+penguin_lm <- lm(body_mass_g ~ flipper_length_mm + bill_depth_mm, data = penguins)
+
+# Return just the coefficients:
+penguin_lm
+```
+Interpretting this coefficient for flipper length: on average, we would expect a 1 mm increase in flipper length to be associated with a 51.54 g increase in body mass if everything else about the penguins is constant.
+
+Use summary() function to get more info
+```{r}
+# bill depth is the only one of not rejecting the null hypothesis, non-significant coefficient doesn't mean drop predictor variable from the model
+summary(penguin_lm)
+```
+r-squared value of 0.7596 
+We would expect that 75.96% of the variance in body weight in penguins can be explained by this model which consists of variables bill_depth_mm and flipper_length_mm. 
+
+### Use `broom` functions tidy and glance
+
+Use broom::tidy to get the coefficient summary in a data frame.
+Use broom::glance to get the model summary in a data frame. 
+```{r}
+penguin_lm_tidy <- tidy(penguin_lm)
+penguin_lm_tidy
+```
+
+Try using in-line code to refer to the bill-depth coefficient. Use command return to have value pop up.
+`r penguin_lm_tidy$estimate[3]`
+
+```{r}
+penguin_lm_glance <- glance(penguin_lm)
+
+penguin_lm_glance
+```
+
+## Try another model
+
+We have thought hard, done a literature review, consulted with experts, deeply explored our data and decided that the three most critical variables to include in this model (with body mass as the outcome variable) are:
+
+- flipper length
+- species
+- sex
+
+Task: create a multiple linear regression model using those 3 predictor variables 
+
+Then take a look at the model outputs and interpret the coefficients
+
+```{r}
+body_mass_lm <- lm(body_mass_g ~ flipper_length_mm + species + sex, data = penguins)
+
+body_mass_lm
+
+# mass (g) = -365.82 + 20.02(flipp_mm) - 87.63(chinstrap) + 863.3(gentoo) + 530.38(male)
+# For every 1 chinstrap penguin there is 
+# Reference is female for sex and Adelie for species
+# For every Gentoo penguin expect body mass to be 836.26g more than an Adelie penguin
+# Chinstrap penguins are expected to be smaller than Adelie's by on average 87.63g for body mass
+# Expect a male penguin to weigh on average 530.38 more than females
+
+# Predic the mass of a penguin that has flipper length of 180 mm, chinstrap and is female.
+# mass (g) = -365.82 + 20.02(180mm) - 87.63(1) + 863.3(0) + 530.38(0)
+# set levels equal to 0 or 1
+
+# Plug into equation to estimate male Adelie penguin 200m long flippers
+# mass (g) = -365.82 + 20.02(200mm) - 87.63(0) + 863.3(0) + 530.38(1)
+```
+
+### Use broom:augment() to see predicted values
+```{r}
+# predicts values for existing observations
+augment(body_mass_lm)
+```
+
+# Use plot to look at model diagnostics
+```{r}
+# Scale-Location: Relatively homogenous spread of variables?
+# Independence of residuals: do errors of one variable impact errors of another observation
+plot(body_mass_lm)
+```
+
+- Conceptual understanding and expertise allows me to responsibly determien that penguin species, sex and flipper length are reasonable predictor variables (thinking hard about variables and different variable combinations)
+
+- Diagnostic plots all check out for normality of residuals, homoscedasticity, and now worrisome outliers (<< last one is not an assumption)
+
+
+## Make output tables
+
+Using model summary:
+```{r}
+modelsummary(body_mass_lm)
+```
+
+Using stargazer:
+```{r, results = "asis"}
+stargazer(body_mass_lm, type = "html")
+
+```
+
+
